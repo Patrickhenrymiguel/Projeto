@@ -58,10 +58,12 @@ jobs:
           )
 
           old = 'm_Settings.iPort = reader.GetInteger("client", "port", 29418);'
-          force = '''m_Settings.iPort = reader.GetInteger("client", "port", 29418);
-    strncpy(m_Settings.szHost, "15.204.150.91", MAX_SETTINGS_STRING - 1);
-    m_Settings.szHost[MAX_SETTINGS_STRING - 1] = '\\0';
-    m_Settings.iPort = 29418;'''
+          force = (
+              'm_Settings.iPort = reader.GetInteger("client", "port", 29418);\\n'
+              '    strncpy(m_Settings.szHost, "15.204.150.91", MAX_SETTINGS_STRING - 1);\\n'
+              "    m_Settings.szHost[MAX_SETTINGS_STRING - 1] = '\\\\0';\\n"
+              '    m_Settings.iPort = 29418;'
+          )
           if old in s and 'strncpy(m_Settings.szHost, "15.204.150.91"' not in s:
               s = s.replace(old, force)
 
