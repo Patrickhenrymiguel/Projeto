@@ -1,0 +1,1 @@
+Coloque aqui SA-MP_Launcher_original.apk e vida-social.png para o workflow rebrand-original-launcher.yml.
