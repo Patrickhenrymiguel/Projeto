@@ -58,7 +58,7 @@ jobs:
           p = root / "app/src/main/java/com/gta/launcher/activity/MainActivity.java"
           s = p.read_text(encoding="utf-8")
           s = s.replace("import android.widget.Toast;", "import android.widget.Toast;\nimport android.app.DownloadManager;\nimport android.database.Cursor;\nimport java.io.File;")
-          s = s.replace("private boolean storagePermissionGranted = false;", "private boolean storagePermissionGranted = false;\n    private static final String VIDA_DATA_URL = \"https://www.mediafire.com/file/w0d6qfeny387jy9/ru.unisamp_mobile.game-19999999.7z/file\";\n    private static final String VIDA_DATA_FILE = \"ru.unisamp_mobile.game-19999999.7z\";")
+          s = s.replace("private boolean storagePermissionGranted = false;", "private boolean storagePermissionGranted = false;\n    private static final String VIDA_DATA_URL = \"https://www.mediafire.com/file/jhw38chokxm6xas/ru.unisamp_mobile.game.zip/file\";\n    private static final String VIDA_DATA_FILE = \"ru.unisamp_mobile.game.zip\";")
           s = s.replace("private void startGameIfReady() {", """private void ensureVidaDataThenStart() {
         try {
             File dir = new File(Environment.getExternalStorageDirectory(), "Download/VidaSocial");
