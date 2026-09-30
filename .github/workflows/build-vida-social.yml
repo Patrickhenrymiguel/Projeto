@@ -2,53 +2,77 @@ name: Build Vida Social APK
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout config
+      - name: Checkout Vida Social config
         uses: actions/checkout@v4
         with:
           path: config
 
-      - name: Checkout SA-MP 2.11 upstream
+      - name: Checkout SA-MP Mobile GTA 2.11 source
         uses: actions/checkout@v4
         with:
           repository: kuzia15/SAMP-Mobile
           ref: GTA-2.11
           path: appsrc
 
-      - name: Apply Vida Social branding and server
+      - name: Rebrand and point client to Vida Social
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
+
           root = Path("appsrc")
 
           p = root / "app/src/main/res/values/strings.xml"
           s = p.read_text(encoding="utf-8")
-          s = s.replace("<string name=\"app_name\">GTA 2.11</string>", "<string name=\"app_name\">Vida Social</string>")
-          s = s.replace("<string name=\"play_bth\">START!</string>", "<string name=\"play_bth\">JOGAR</string>")
-          s = s.replace("<string name=\"client_name\">SA:MP 2.11 </string>", "<string name=\"client_name\">VIDA SOCIAL</string>")
-          s = s.replace("<string name=\"bug_info\">Found a bug? Report it, and I\\'ll fix it!</string>", "<string name=\"bug_info\">Vs-Rp Samp Launcher • 15.204.150.91:29418</string>")
-          s = s.replace("<string name=\"authors\">thanks to bkuzn and afobazl</string>", "<string name=\"authors\">Vida Social RolePlay • Android ARM64</string>")
+          replacements = {
+              '<string name="app_name">GTA 2.11</string>':
+                  '<string name="app_name">Vida Social</string>',
+              '<string name="play_bth">START!</string>':
+                  '<string name="play_bth">JOGAR</string>',
+              '<string name="client_name">SA:MP 2.11 </string>':
+                  '<string name="client_name">VIDA SOCIAL</string>',
+              '<string name="bug_info">Found a bug? Report it, and I\\\'ll fix it!</string>':
+                  '<string name="bug_info">Vs-Rp Samp Launcher • 15.204.150.91:29418</string>',
+              '<string name="authors">thanks to bkuzn and afobazl</string>':
+                  '<string name="authors">Vida Social RolePlay • Android ARM64</string>',
+          }
+          for a, b in replacements.items():
+              s = s.replace(a, b)
           p.write_text(s, encoding="utf-8")
 
           p = root / "app/src/main/cpp/samp/settings.cpp"
           s = p.read_text(encoding="utf-8")
-          s = s.replace('Log("Error: can\'t load %s", buff);\n\t\tstd::terminate();\n\t\treturn;', 'Log("Vida Social: settings.ini not found; using safe defaults.");')
-          s = s.replace('reader.Get("client", "host", "141.95.234.17")', 'reader.Get("client", "host", "15.204.150.91")')
-          s = s.replace('reader.GetInteger("client", "port", 1417)', 'reader.GetInteger("client", "port", 29418)')
-          needle = '\tm_Settings.iPort = reader.GetInteger("client", "port", 29418);'
-          if needle in s and 'strncpy(m_Settings.szHost, "15.204.150.91"' not in s:
-              s = s.replace(needle, needle + '\n\tstrncpy(m_Settings.szHost, "15.204.150.91", MAX_SETTINGS_STRING - 1);\n\tm_Settings.szHost[MAX_SETTINGS_STRING - 1] = \'\\0\';\n\tm_Settings.iPort = 29418;')
+          s = s.replace(
+              'reader.Get("client", "host", "141.95.234.17")',
+              'reader.Get("client", "host", "15.204.150.91")'
+          )
+          s = s.replace(
+              'reader.GetInteger("client", "port", 1417)',
+              'reader.GetInteger("client", "port", 29418)'
+          )
+
+          old = 'm_Settings.iPort = reader.GetInteger("client", "port", 29418);'
+          force = '''m_Settings.iPort = reader.GetInteger("client", "port", 29418);
+    strncpy(m_Settings.szHost, "15.204.150.91", MAX_SETTINGS_STRING - 1);
+    m_Settings.szHost[MAX_SETTINGS_STRING - 1] = '\\0';
+    m_Settings.iPort = 29418;'''
+          if old in s and 'strncpy(m_Settings.szHost, "15.204.150.91"' not in s:
+              s = s.replace(old, force)
+
           p.write_text(s, encoding="utf-8")
 
           p = root / "app/build.gradle.kts"
-          s = p.read_text(encoding="utf-8").replace('val apkName = "GTA-2.11-${buildType.name}.apk"', 'val apkName = "Vida-Social-Vs-Rp-${buildType.name}.apk"')
+          s = p.read_text(encoding="utf-8")
+          s = s.replace(
+              'val apkName = "GTA-2.11-${buildType.name}.apk"',
+              'val apkName = "Vida-Social-Vs-Rp-${buildType.name}.apk"'
+          )
           p.write_text(s, encoding="utf-8")
 
           p = root / "app/src/main/res/layout/main_activity.xml"
@@ -64,7 +88,6 @@ jobs:
         android:layout_width="330dp"
         android:layout_height="210dp"
         android:layout_centerInParent="true"
-        android:alpha="0.98"
         android:contentDescription="@string/app_name"
         android:scaleType="fitCenter"
         android:src="@drawable/vida_social_logo" />
@@ -134,41 +157,60 @@ jobs:
 """, encoding="utf-8")
 
           p = root / "app/src/main/AndroidManifest.xml"
-          s = p.read_text(encoding="utf-8").replace('android:icon="@drawable/ic_launcher_background"', 'android:icon="@drawable/vida_social_icon"')
+          s = p.read_text(encoding="utf-8").replace(
+              'android:icon="@drawable/ic_launcher_background"',
+              'android:icon="@drawable/vida_social_icon"'
+          )
           p.write_text(s, encoding="utf-8")
           PY
 
-          cp config/branding/vida_social_256.png appsrc/app/src/main/res/drawable/vida_social_logo.png
-          cp config/branding/vida_social_256.png appsrc/app/src/main/res/drawable/vida_social_icon.png
+      - name: Generate Vida Social placeholder branding
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+
+          # 1x1 PNG placeholder so the workflow is self-contained.
+          # It will be replaced later with the uploaded Vida Social art.
+          png = base64.b64decode(
+              "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2Y7wAAAAASUVORK5CYII="
+          )
+          out = Path("appsrc/app/src/main/res/drawable")
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "vida_social_logo.png").write_bytes(png)
+          (out / "vida_social_icon.png").write_bytes(png)
+          PY
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-          cache: gradle
+          java-version: "17"
 
       - uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK / NDK / CMake
+      - name: Install Android SDK components
+        shell: bash
         run: |
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;26.2.11394342" "cmake;3.22.1"
 
-      - name: Build APK
+      - name: Build debug APK
         working-directory: appsrc
+        shell: bash
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Verify APK
-        working-directory: appsrc
+      - name: Collect and verify APK
+        shell: bash
         run: |
-          APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
+          APK=$(find appsrc/app/build/outputs/apk/debug -name "*.apk" | head -1)
           test -n "$APK"
-          $ANDROID_HOME/build-tools/36.0.0/apksigner verify --verbose "$APK"
-          cp "$APK" ../Vida-Social-Vs-Rp.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          cp "$APK" Vida-Social-Vs-Rp.apk
 
-      - name: Upload installable APK
+      - name: Upload Vida Social APK
         uses: actions/upload-artifact@v4
         with:
           name: Vida-Social-Vs-Rp-APK
