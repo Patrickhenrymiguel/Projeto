@@ -55,6 +55,60 @@ jobs:
           s = s.replace("\t\treturn;\n", "")
           p.write_text(s, encoding="utf-8")
 
+          p = root / "app/src/main/java/com/gta/launcher/activity/MainActivity.java"
+          s = p.read_text(encoding="utf-8")
+          s = s.replace("import android.widget.Toast;", "import android.widget.Toast;\nimport android.app.DownloadManager;\nimport android.database.Cursor;\nimport java.io.File;")
+          s = s.replace("private boolean storagePermissionGranted = false;", "private boolean storagePermissionGranted = false;\n    private static final String VIDA_DATA_URL = \"https://www.mediafire.com/file/w0d6qfeny387jy9/ru.unisamp_mobile.game-19999999.7z/file\";\n    private static final String VIDA_DATA_FILE = \"ru.unisamp_mobile.game-19999999.7z\";")
+          s = s.replace("private void startGameIfReady() {", """private void ensureVidaDataThenStart() {
+        try {
+            File dir = new File(Environment.getExternalStorageDirectory(), "Download/VidaSocial");
+            if (!dir.exists()) dir.mkdirs();
+            File out = new File(dir, VIDA_DATA_FILE);
+            if (out.exists() && out.length() > 0) {
+                Toast.makeText(this, "DATA Vida Social encontrada. Iniciando...", Toast.LENGTH_SHORT).show();
+                startGame();
+                return;
+            }
+
+            Toast.makeText(this, "Baixando DATA do Vida Social...", Toast.LENGTH_LONG).show();
+            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(VIDA_DATA_URL));
+            req.setTitle("Vida Social - DATA");
+            req.setDescription("Baixando arquivos do jogo");
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.setDestinationUri(Uri.fromFile(out));
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            long id = dm.enqueue(req);
+
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    DownloadManager.Query q = new DownloadManager.Query().setFilterById(id);
+                    Cursor cursor = dm.query(q);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                        cursor.close();
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            Toast.makeText(MainActivity.this, "DATA baixada.", Toast.LENGTH_SHORT).show();
+                            startGame();
+                            return;
+                        } else if (status == DownloadManager.STATUS_FAILED) {
+                            Toast.makeText(MainActivity.this, "Falha ao baixar a DATA.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                    }
+                    handler.postDelayed(this, 1000L);
+                }
+            });
+        } catch (Exception e) {
+            Log.e("MainActivity", "Erro ao baixar DATA: " + e.getMessage(), e);
+            Toast.makeText(this, "Erro ao baixar a DATA.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void startGameIfReady() {""")
+          s = s.replace("startGame();", "ensureVidaDataThenStart();", 1)
+          p.write_text(s, encoding="utf-8")
+
           p = root / "app/build.gradle.kts"
           s = p.read_text(encoding="utf-8")
           s = s.replace("GTA-2.11-", "Vida-Social-Vs-Rp-")
