@@ -31,6 +31,8 @@ jobs:
           s = s.replace("GTA 2.11", "Vida Social")
           s = s.replace("START!", "JOGAR")
           s = s.replace("SA:MP 2.11", "VIDA SOCIAL")
+          s = s.replace("Found a bug? Report it, and I\\'ll fix it!", "VIDA SOCIAL ROLEPLAY")
+          s = s.replace("thanks to bkuzn and afobazl", "Vs-Rp Samp Launcher")
           p.write_text(s, encoding="utf-8")
 
           # Linux is case-sensitive; upstream includes playertablist.h
@@ -49,6 +51,10 @@ jobs:
           s = p.read_text(encoding="utf-8")
           s = s.replace("141.95.234.17", "15.204.150.91")
           s = s.replace("1417", "29418")
+          s = s.replace(
+              'if(reader.ParseError() < 0)\\n\\t{\\n\\t\\tLog("Error: can\\'t load %s", buff);\\n\\t\\tstd::terminate();\\n\\t\\treturn;\\n\\t}',
+              'if(reader.ParseError() < 0)\\n\\t{\\n\\t\\tLog("Settings file not found, using Vida Social defaults.");\\n\\t}'
+          )
           p.write_text(s, encoding="utf-8")
 
           p = root / "app/build.gradle.kts"
