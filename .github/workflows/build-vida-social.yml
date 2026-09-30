@@ -1,0 +1,56 @@
+name: Build Vida Social APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare
+        run: |
+          mkdir -p input
+          echo "Coloque o APK base em input/base.apk" > input/README.txt
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apktool zipalign apksigner
+
+      - name: Check base APK
+        run: |
+          test -f input/base.apk || (echo "Falta input/base.apk" && exit 1)
+
+      - name: Decode APK
+        run: apktool d -f input/base.apk -o decoded
+
+      - name: Rebrand app name
+        run: |
+          find decoded/res -type f -name "*.xml" -print0 | xargs -0 sed -i 's/SA-MP Launcher/Vida Social/g; s/Brasil Roleplay/Vida Social/g; s/BrasilRoleplay/Vida Social/g'
+
+      - name: Apply icon if present
+        run: |
+          if [ -f branding/vida-social.png ]; then
+            python3 scripts/apply_icon.py branding/vida-social.png decoded
+          fi
+
+      - name: Build APK
+        run: apktool b decoded -o vida-social-unsigned.apk
+
+      - name: Create debug keystore
+        run: |
+          keytool -genkeypair -v -keystore vida-social.keystore -storepass vidasocial -keypass vidasocial -alias vidasocial -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vida Social,O=Vida Social,C=BR"
+
+      - name: Align and sign
+        run: |
+          zipalign -f -p 4 vida-social-unsigned.apk vida-social-aligned.apk
+          apksigner sign --ks vida-social.keystore --ks-pass pass:vidasocial --key-pass pass:vidasocial --out Vida-Social-Vs-Rp.apk vida-social-aligned.apk
+          apksigner verify --verbose Vida-Social-Vs-Rp.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vida-Social-Vs-Rp
+          path: Vida-Social-Vs-Rp.apk
