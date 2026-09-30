@@ -17,11 +17,18 @@ jobs:
           sudo apt-get install -y wget zipalign apksigner openjdk-17-jdk
           wget -q https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.10.0.jar -O apktool.jar
 
-      - name: Download original SA-MP Launcher
+      - name: Restore original SA-MP Launcher input
         shell: bash
         run: |
-          echo "Original APK must be committed at original-launcher/SA-MP_Launcher_original.apk"
-          test -f original-launcher/SA-MP_Launcher_original.apk
+          mkdir -p original-launcher
+          if [ ! -f original-launcher/SA-MP_Launcher_original.apk ]; then
+            echo "Missing original launcher input."
+            exit 1
+          fi
+          if [ ! -f original-launcher/vida-social.png ]; then
+            echo "Missing Vida Social image input."
+            exit 1
+          fi
 
       - name: Decode APK
         shell: bash
@@ -85,7 +92,9 @@ jobs:
       - name: Sign APK
         shell: bash
         run: |
-          keytool -genkeypair -v -keystore vida-social.keystore -storepass vidasocial123 -keypass vidasocial123 -alias vidasocial -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vida Social, OU=Vs-Rp, O=Vida Social, L=Praia Grande, ST=SP, C=BR"
+          if [ ! -f vida-social.keystore ]; then
+            keytool -genkeypair -v -keystore vida-social.keystore -storepass vidasocial123 -keypass vidasocial123 -alias vidasocial -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vida Social, OU=Vs-Rp, O=Vida Social, L=Praia Grande, ST=SP, C=BR"
+          fi
           apksigner sign --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --ks vida-social.keystore --ks-pass pass:vidasocial123 --key-pass pass:vidasocial123 --out Vida-Social-Original-Launcher.apk Vida-Social-Original-Launcher-aligned.apk
           apksigner verify --verbose --print-certs Vida-Social-Original-Launcher.apk
           zipalign -c -v 4 Vida-Social-Original-Launcher.apk
