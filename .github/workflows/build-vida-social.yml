@@ -54,6 +54,10 @@ jobs:
           p = root / "app/build.gradle.kts"
           s = p.read_text(encoding="utf-8")
           s = s.replace("GTA-2.11-", "Vida-Social-Vs-Rp-")
+          s = s.replace(
+              'jniLibs {\n            excludes.add("META-INF/*")\n        }',
+              'jniLibs {\n            excludes.add("META-INF/*")\n            pickFirsts.add("lib/arm64-v8a/libbass.so")\n        }'
+          )
           p.write_text(s, encoding="utf-8")
           PY
 
