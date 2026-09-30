@@ -86,8 +86,9 @@ jobs:
         shell: bash
         run: |
           keytool -genkeypair -v -keystore vida-social.keystore -storepass vidasocial123 -keypass vidasocial123 -alias vidasocial -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vida Social, OU=Vs-Rp, O=Vida Social, L=Praia Grande, ST=SP, C=BR"
-          apksigner sign --ks vida-social.keystore --ks-pass pass:vidasocial123 --key-pass pass:vidasocial123 --out Vida-Social-Original-Launcher.apk Vida-Social-Original-Launcher-aligned.apk
-          apksigner verify --verbose Vida-Social-Original-Launcher.apk
+          apksigner sign --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --ks vida-social.keystore --ks-pass pass:vidasocial123 --key-pass pass:vidasocial123 --out Vida-Social-Original-Launcher.apk Vida-Social-Original-Launcher-aligned.apk
+          apksigner verify --verbose --print-certs Vida-Social-Original-Launcher.apk
+          zipalign -c -v 4 Vida-Social-Original-Launcher.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
