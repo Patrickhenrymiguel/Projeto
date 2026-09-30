@@ -1,0 +1,97 @@
+name: Rebrand Original SA-MP Launcher
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Prepare tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget zipalign apksigner openjdk-17-jdk
+          wget -q https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_2.10.0.jar -O apktool.jar
+
+      - name: Download original SA-MP Launcher
+        shell: bash
+        run: |
+          echo "Original APK must be committed at original-launcher/SA-MP_Launcher_original.apk"
+          test -f original-launcher/SA-MP_Launcher_original.apk
+
+      - name: Decode APK
+        shell: bash
+        run: |
+          java -jar apktool.jar d -f original-launcher/SA-MP_Launcher_original.apk -o decoded
+
+      - name: Apply Vida Social branding
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import shutil, os
+
+          root=Path("decoded")
+          # Replace launcher icons with Vida Social logo
+          logo=Path("original-launcher/vida-social.png")
+          im=Image.open(logo).convert("RGBA")
+          sizes={"mdpi":48,"hdpi":72,"xhdpi":96,"xxhdpi":144,"xxxhdpi":192}
+          for qual,sz in sizes.items():
+              for name in ["ic_launcher.png","ic_launcher_round.png","ic_launcher_foreground.png"]:
+                  p=root/f"res/mipmap-{qual}-v4"/name
+                  if p.exists():
+                      out=im.copy()
+                      out.thumbnail((sz,sz))
+                      canvas=Image.new("RGBA",(sz,sz),(0,0,0,0))
+                      x=(sz-out.width)//2; y=(sz-out.height)//2
+                      canvas.alpha_composite(out,(x,y))
+                      canvas.save(p)
+          # Background image
+          bg=root/"res/drawable/background.png"
+          if bg.exists():
+              src=Image.open(logo).convert("RGB")
+              src.thumbnail((1920,1080))
+              canvas=Image.new("RGB",(1920,1080),(10,6,18))
+              x=(1920-src.width)//2; y=(1080-src.height)//2
+              canvas.paste(src,(x,y))
+              canvas.save(bg)
+          # Replace visible branding strings in decoded XML/smali where plain text exists
+          reps={
+              "SA-MP Launcher":"Vida Social",
+              "SA-MP":"Vida Social",
+              "SAMP Launcher":"Vida Social",
+          }
+          for p in root.rglob("*"):
+              if not p.is_file() or p.suffix.lower() not in {".xml",".smali",".txt"}:
+                  continue
+              try: s=p.read_text(encoding="utf-8")
+              except: continue
+              ns=s
+              for a,b in reps.items(): ns=ns.replace(a,b)
+              if ns!=s: p.write_text(ns,encoding="utf-8")
+          PY
+
+      - name: Build APK
+        shell: bash
+        run: |
+          java -jar apktool.jar b decoded -o Vida-Social-Original-Launcher-unsigned.apk
+          zipalign -f 4 Vida-Social-Original-Launcher-unsigned.apk Vida-Social-Original-Launcher-aligned.apk
+
+      - name: Sign APK
+        shell: bash
+        run: |
+          keytool -genkeypair -v -keystore vida-social.keystore -storepass vidasocial123 -keypass vidasocial123 -alias vidasocial -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Vida Social, OU=Vs-Rp, O=Vida Social, L=Praia Grande, ST=SP, C=BR"
+          apksigner sign --ks vida-social.keystore --ks-pass pass:vidasocial123 --key-pass pass:vidasocial123 --out Vida-Social-Original-Launcher.apk Vida-Social-Original-Launcher-aligned.apk
+          apksigner verify --verbose Vida-Social-Original-Launcher.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vida-Social-Original-Launcher
+          path: Vida-Social-Original-Launcher.apk
+          if-no-files-found: error
