@@ -40,6 +40,11 @@ jobs:
           s = s.replace("samp_widgets/playerTabList.h", "samp_widgets/playertablist.h")
           p.write_text(s, encoding="utf-8")
 
+          p = root / "app/src/main/cpp/samp/game/rgba.cpp"
+          s = p.read_text(encoding="utf-8")
+          s = s.replace('#include "RGBA.h"', '#include "rgba.h"')
+          p.write_text(s, encoding="utf-8")
+
           p = root / "app/src/main/cpp/samp/settings.cpp"
           s = p.read_text(encoding="utf-8")
           s = s.replace("141.95.234.17", "15.204.150.91")
