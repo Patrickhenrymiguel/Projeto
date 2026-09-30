@@ -51,10 +51,8 @@ jobs:
           s = p.read_text(encoding="utf-8")
           s = s.replace("141.95.234.17", "15.204.150.91")
           s = s.replace("1417", "29418")
-          s = s.replace(
-              'if(reader.ParseError() < 0)\\n\\t{\\n\\t\\tLog("Error: can\\'t load %s", buff);\\n\\t\\tstd::terminate();\\n\\t\\treturn;\\n\\t}',
-              'if(reader.ParseError() < 0)\\n\\t{\\n\\t\\tLog("Settings file not found, using Vida Social defaults.");\\n\\t}'
-          )
+          s = s.replace("std::terminate();", "// Vida Social: keep defaults when settings.ini is missing")
+          s = s.replace("\t\treturn;\n", "")
           p.write_text(s, encoding="utf-8")
 
           p = root / "app/build.gradle.kts"
